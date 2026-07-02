@@ -60,10 +60,26 @@
             "default": 443
           },
           {
-            "id": "database",
-            "label": "Database",
+            "id": "httpPath",
+            "label": "HTTP path",
             "type": "string",
-            "profileField": "database"
+            "option": "httpPath",
+            "required": true
+          },
+          {
+            "id": "database",
+            "label": "Schema",
+            "type": "string",
+            "profileField": "database",
+            "option": "ConnSchema",
+            "default": "default"
+          },
+          {
+            "id": "catalog",
+            "label": "Catalog",
+            "type": "string",
+            "option": "ConnCatalog",
+            "default": "SPARK"
           }
         ]
       },
@@ -102,10 +118,26 @@
           "default": 443
         },
         {
-          "id": "database",
-          "label": "Database",
+          "id": "httpPath",
+          "label": "HTTP path",
           "type": "string",
-          "profileField": "database"
+          "option": "httpPath",
+          "required": true
+        },
+        {
+          "id": "database",
+          "label": "Schema",
+          "type": "string",
+          "profileField": "database",
+          "option": "ConnSchema",
+          "default": "default"
+        },
+        {
+          "id": "catalog",
+          "label": "Catalog",
+          "type": "string",
+          "option": "ConnCatalog",
+          "default": "SPARK"
         },
         {
           "id": "readOnly",
@@ -145,127 +177,198 @@
           ]
         },
         {
-          "id": "personalAccessToken",
-          "label": "Personal access token",
+          "id": "databricksPersonalAccessToken",
+          "label": "Databricks personal access token",
           "kind": "token",
           "secretPurposes": [
             "token"
           ],
           "fields": [
             {
-              "id": "token",
-              "label": "Token",
+              "id": "authMech",
+              "label": "AuthMech",
+              "type": "number",
+              "option": "AuthMech",
+              "default": 3,
+              "required": true
+            },
+            {
+              "id": "uid",
+              "label": "UID",
+              "type": "string",
+              "option": "UID",
+              "default": "token",
+              "required": true
+            },
+            {
+              "id": "password",
+              "label": "Personal access token",
               "type": "secret",
-              "secretPurpose": "token"
+              "secretPurpose": "token",
+              "profileField": "password",
+              "option": "PWD",
+              "required": true
             }
           ]
         },
         {
-          "id": "oauth2",
-          "label": "OAuth 2.0",
+          "id": "databricksOAuthToken",
+          "label": "Databricks OAuth token",
           "kind": "oauth2",
           "secretPurposes": [
             "token"
           ],
           "fields": [
             {
-              "id": "accessToken",
-              "label": "Access token",
-              "type": "secret",
-              "secretPurpose": "token"
+              "id": "authMech",
+              "label": "AuthMech",
+              "type": "number",
+              "option": "AuthMech",
+              "default": 11,
+              "required": true
             },
             {
-              "id": "refreshToken",
-              "label": "Refresh token",
-              "type": "secret",
-              "secretPurpose": "token"
+              "id": "authFlow",
+              "label": "Auth flow",
+              "type": "number",
+              "option": "Auth_Flow",
+              "default": 0,
+              "required": true
             },
             {
-              "id": "clientId",
-              "label": "Client ID",
-              "type": "string"
-            },
-            {
-              "id": "clientSecret",
-              "label": "Client secret",
+              "id": "authAccessToken",
+              "label": "OAuth access token",
               "type": "secret",
-              "secretPurpose": "token"
+              "secretPurpose": "token",
+              "option": "Auth_AccessToken",
+              "required": true
             }
           ]
         },
         {
-          "id": "azureAd",
-          "label": "Azure AD / Entra ID",
-          "kind": "azureAd",
-          "secretPurposes": [
-            "token"
-          ],
-          "fields": [
-            {
-              "id": "tenantId",
-              "label": "Tenant ID",
-              "type": "string"
-            },
-            {
-              "id": "clientId",
-              "label": "Client ID",
-              "type": "string"
-            },
-            {
-              "id": "clientSecret",
-              "label": "Client secret",
-              "type": "secret",
-              "secretPurpose": "token"
-            },
-            {
-              "id": "accessToken",
-              "label": "Access token",
-              "type": "secret",
-              "secretPurpose": "token"
-            }
-          ]
-        },
-        {
-          "id": "servicePrincipal",
-          "label": "Service principal",
-          "kind": "oauth2",
-          "secretPurposes": [
-            "token"
-          ],
-          "fields": [
-            {
-              "id": "clientId",
-              "label": "Client ID",
-              "type": "string"
-            },
-            {
-              "id": "clientSecret",
-              "label": "Client secret",
-              "type": "secret",
-              "secretPurpose": "token"
-            },
-            {
-              "id": "tenantId",
-              "label": "Tenant ID",
-              "type": "string"
-            }
-          ]
-        },
-        {
-          "id": "managedIdentity",
-          "label": "Managed identity",
-          "kind": "managedIdentity",
-          "secretPurposes": [],
-          "fields": []
-        },
-        {
-          "id": "browserSso",
-          "label": "Browser SSO",
+          "id": "databricksOAuthU2M",
+          "label": "Databricks OAuth user-to-machine",
           "kind": "browserSso",
           "secretPurposes": [
+            "password"
+          ],
+          "fields": [
+            {
+              "id": "authMech",
+              "label": "AuthMech",
+              "type": "number",
+              "option": "AuthMech",
+              "default": 11,
+              "required": true
+            },
+            {
+              "id": "authFlow",
+              "label": "Auth flow",
+              "type": "number",
+              "option": "Auth_Flow",
+              "default": 2,
+              "required": true
+            },
+            {
+              "id": "tokenCachePassPhrase",
+              "label": "Token cache passphrase",
+              "type": "secret",
+              "secretPurpose": "password",
+              "option": "TokenCachePassPhrase",
+              "required": true
+            },
+            {
+              "id": "enableTokenCache",
+              "label": "Enable token cache",
+              "type": "number",
+              "option": "EnableTokenCache",
+              "default": 1
+            }
+          ]
+        },
+        {
+          "id": "databricksOAuthM2M",
+          "label": "Databricks OAuth machine-to-machine",
+          "kind": "oauth2",
+          "secretPurposes": [
             "token"
           ],
-          "fields": []
+          "fields": [
+            {
+              "id": "authMech",
+              "label": "AuthMech",
+              "type": "number",
+              "option": "AuthMech",
+              "default": 11,
+              "required": true
+            },
+            {
+              "id": "authFlow",
+              "label": "Auth flow",
+              "type": "number",
+              "option": "Auth_Flow",
+              "default": 1,
+              "required": true
+            },
+            {
+              "id": "oauth2ClientId",
+              "label": "OAuth client ID",
+              "type": "string",
+              "option": "OAuth2ClientId",
+              "required": true
+            },
+            {
+              "id": "oauth2Secret",
+              "label": "OAuth secret",
+              "type": "secret",
+              "secretPurpose": "token",
+              "option": "OAuth2Secret",
+              "required": true
+            },
+            {
+              "id": "azureTenantId",
+              "label": "Azure tenant ID",
+              "type": "string",
+              "option": "AzureTenantId"
+            }
+          ]
+        },
+        {
+          "id": "databricksAzureManagedIdentity",
+          "label": "Databricks Azure managed identity",
+          "kind": "managedIdentity",
+          "secretPurposes": [],
+          "fields": [
+            {
+              "id": "authMech",
+              "label": "AuthMech",
+              "type": "number",
+              "option": "AuthMech",
+              "default": 11,
+              "required": true
+            },
+            {
+              "id": "authFlow",
+              "label": "Auth flow",
+              "type": "number",
+              "option": "Auth_Flow",
+              "default": 3,
+              "required": true
+            },
+            {
+              "id": "azureWorkspaceResourceId",
+              "label": "Azure workspace resource ID",
+              "type": "string",
+              "option": "Azure_workspace_resource_id",
+              "required": true
+            },
+            {
+              "id": "oauth2ClientId",
+              "label": "Managed identity client ID",
+              "type": "string",
+              "option": "OAuth2ClientId"
+            }
+          ]
         },
         {
           "id": "customDriverOptions",
@@ -391,7 +494,7 @@
         "kind": "desktop-db-contract",
         "path": "apps/desktop/src-tauri/src/db/profile.rs",
         "destination": "native/source/irodori-table/apps/desktop/src-tauri/src/db/profile.rs",
-        "sha256": "6ea079bd8fd74f687e0a549cbc3b3e97009fa5f529839831a79b8e4d69999446"
+        "sha256": "a4ac432937eb051c4b3434751b5153b33974b8294a3521745ed021da377c458f"
       },
       {
         "kind": "desktop-db-contract",
@@ -419,44 +522,44 @@
       },
       {
         "kind": "portable-connection-contract",
-        "path": "crates/irodori-connection/src/lib.rs",
-        "destination": "native/source/irodori-table/crates/irodori-connection/src/lib.rs",
+        "path": "../irodori-kit/irodori-connection/src/lib.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-connection/src/lib.rs",
         "sha256": "05197e61760bf2afe02efd33380328e10c5730601c3003ff356f7579eb2c23d6"
       },
       {
         "kind": "portable-connection-contract",
-        "path": "crates/irodori-connection/src/portable.rs",
-        "destination": "native/source/irodori-table/crates/irodori-connection/src/portable.rs",
+        "path": "../irodori-kit/irodori-connection/src/portable.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-connection/src/portable.rs",
         "sha256": "ab45663fa9a101b66af686bfb45404c2c475e82578842f3f18af024ad5c9fbe8"
       },
       {
         "kind": "secure-store-contract",
-        "path": "crates/irodori-secure-store/src/lib.rs",
-        "destination": "native/source/irodori-table/crates/irodori-secure-store/src/lib.rs",
+        "path": "../irodori-kit/irodori-secure-store/src/lib.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-secure-store/src/lib.rs",
         "sha256": "85fb8b001936ba9090da8a4e3197d61bc54d833689d71efa1d0aeb99b91bdb9f"
       },
       {
         "kind": "transport-contract",
-        "path": "crates/irodori-core/src/lib.rs",
-        "destination": "native/source/irodori-table/crates/irodori-core/src/lib.rs",
+        "path": "../irodori-kit/irodori-core/src/lib.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-core/src/lib.rs",
         "sha256": "c356aaa20dd6fdaf71aae8b08febcf2cafbbe53bfda60e276bb71f57fc281510"
       },
       {
         "kind": "transport-runtime",
-        "path": "crates/irodori-proxy/src/lib.rs",
-        "destination": "native/source/irodori-table/crates/irodori-proxy/src/lib.rs",
-        "sha256": "b07f7e81df3703e04688a541b07a4c65ec968d6117f8028a07f479a2d066dfba"
+        "path": "../irodori-kit/irodori-proxy/src/lib.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-proxy/src/lib.rs",
+        "sha256": "4ff9e90f61f69aa2f7a8c663b0a13e1b0f0c283b166d608a2a0a6613cd03f126"
       },
       {
         "kind": "transport-runtime",
-        "path": "crates/irodori-proxy/src/plan.rs",
-        "destination": "native/source/irodori-table/crates/irodori-proxy/src/plan.rs",
+        "path": "../irodori-kit/irodori-proxy/src/plan.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-proxy/src/plan.rs",
         "sha256": "b6e3be9778fd9b543d905dec39c0ddf579e739313e0bf24881f6152b6da94a39"
       },
       {
         "kind": "transport-runtime",
-        "path": "crates/irodori-proxy/src/resolved.rs",
-        "destination": "native/source/irodori-table/crates/irodori-proxy/src/resolved.rs",
+        "path": "../irodori-kit/irodori-proxy/src/resolved.rs",
+        "destination": "native/source/irodori-table/../irodori-kit/irodori-proxy/src/resolved.rs",
         "sha256": "4b1ba3f95e49fd582dd82de39452d03a597abe36a8738772e6f4bdbab753772d"
       }
     ]
@@ -502,10 +605,26 @@
           "default": 443
         },
         {
-          "id": "database",
-          "label": "Database",
+          "id": "httpPath",
+          "label": "HTTP path",
           "type": "string",
-          "profileField": "database"
+          "option": "httpPath",
+          "required": true
+        },
+        {
+          "id": "database",
+          "label": "Schema",
+          "type": "string",
+          "profileField": "database",
+          "option": "ConnSchema",
+          "default": "default"
+        },
+        {
+          "id": "catalog",
+          "label": "Catalog",
+          "type": "string",
+          "option": "ConnCatalog",
+          "default": "SPARK"
         }
       ]
     },
@@ -544,10 +663,26 @@
         "default": 443
       },
       {
-        "id": "database",
-        "label": "Database",
+        "id": "httpPath",
+        "label": "HTTP path",
         "type": "string",
-        "profileField": "database"
+        "option": "httpPath",
+        "required": true
+      },
+      {
+        "id": "database",
+        "label": "Schema",
+        "type": "string",
+        "profileField": "database",
+        "option": "ConnSchema",
+        "default": "default"
+      },
+      {
+        "id": "catalog",
+        "label": "Catalog",
+        "type": "string",
+        "option": "ConnCatalog",
+        "default": "SPARK"
       },
       {
         "id": "readOnly",
@@ -587,127 +722,198 @@
         ]
       },
       {
-        "id": "personalAccessToken",
-        "label": "Personal access token",
+        "id": "databricksPersonalAccessToken",
+        "label": "Databricks personal access token",
         "kind": "token",
         "secretPurposes": [
           "token"
         ],
         "fields": [
           {
-            "id": "token",
-            "label": "Token",
+            "id": "authMech",
+            "label": "AuthMech",
+            "type": "number",
+            "option": "AuthMech",
+            "default": 3,
+            "required": true
+          },
+          {
+            "id": "uid",
+            "label": "UID",
+            "type": "string",
+            "option": "UID",
+            "default": "token",
+            "required": true
+          },
+          {
+            "id": "password",
+            "label": "Personal access token",
             "type": "secret",
-            "secretPurpose": "token"
+            "secretPurpose": "token",
+            "profileField": "password",
+            "option": "PWD",
+            "required": true
           }
         ]
       },
       {
-        "id": "oauth2",
-        "label": "OAuth 2.0",
+        "id": "databricksOAuthToken",
+        "label": "Databricks OAuth token",
         "kind": "oauth2",
         "secretPurposes": [
           "token"
         ],
         "fields": [
           {
-            "id": "accessToken",
-            "label": "Access token",
-            "type": "secret",
-            "secretPurpose": "token"
+            "id": "authMech",
+            "label": "AuthMech",
+            "type": "number",
+            "option": "AuthMech",
+            "default": 11,
+            "required": true
           },
           {
-            "id": "refreshToken",
-            "label": "Refresh token",
-            "type": "secret",
-            "secretPurpose": "token"
+            "id": "authFlow",
+            "label": "Auth flow",
+            "type": "number",
+            "option": "Auth_Flow",
+            "default": 0,
+            "required": true
           },
           {
-            "id": "clientId",
-            "label": "Client ID",
-            "type": "string"
-          },
-          {
-            "id": "clientSecret",
-            "label": "Client secret",
+            "id": "authAccessToken",
+            "label": "OAuth access token",
             "type": "secret",
-            "secretPurpose": "token"
+            "secretPurpose": "token",
+            "option": "Auth_AccessToken",
+            "required": true
           }
         ]
       },
       {
-        "id": "azureAd",
-        "label": "Azure AD / Entra ID",
-        "kind": "azureAd",
-        "secretPurposes": [
-          "token"
-        ],
-        "fields": [
-          {
-            "id": "tenantId",
-            "label": "Tenant ID",
-            "type": "string"
-          },
-          {
-            "id": "clientId",
-            "label": "Client ID",
-            "type": "string"
-          },
-          {
-            "id": "clientSecret",
-            "label": "Client secret",
-            "type": "secret",
-            "secretPurpose": "token"
-          },
-          {
-            "id": "accessToken",
-            "label": "Access token",
-            "type": "secret",
-            "secretPurpose": "token"
-          }
-        ]
-      },
-      {
-        "id": "servicePrincipal",
-        "label": "Service principal",
-        "kind": "oauth2",
-        "secretPurposes": [
-          "token"
-        ],
-        "fields": [
-          {
-            "id": "clientId",
-            "label": "Client ID",
-            "type": "string"
-          },
-          {
-            "id": "clientSecret",
-            "label": "Client secret",
-            "type": "secret",
-            "secretPurpose": "token"
-          },
-          {
-            "id": "tenantId",
-            "label": "Tenant ID",
-            "type": "string"
-          }
-        ]
-      },
-      {
-        "id": "managedIdentity",
-        "label": "Managed identity",
-        "kind": "managedIdentity",
-        "secretPurposes": [],
-        "fields": []
-      },
-      {
-        "id": "browserSso",
-        "label": "Browser SSO",
+        "id": "databricksOAuthU2M",
+        "label": "Databricks OAuth user-to-machine",
         "kind": "browserSso",
         "secretPurposes": [
+          "password"
+        ],
+        "fields": [
+          {
+            "id": "authMech",
+            "label": "AuthMech",
+            "type": "number",
+            "option": "AuthMech",
+            "default": 11,
+            "required": true
+          },
+          {
+            "id": "authFlow",
+            "label": "Auth flow",
+            "type": "number",
+            "option": "Auth_Flow",
+            "default": 2,
+            "required": true
+          },
+          {
+            "id": "tokenCachePassPhrase",
+            "label": "Token cache passphrase",
+            "type": "secret",
+            "secretPurpose": "password",
+            "option": "TokenCachePassPhrase",
+            "required": true
+          },
+          {
+            "id": "enableTokenCache",
+            "label": "Enable token cache",
+            "type": "number",
+            "option": "EnableTokenCache",
+            "default": 1
+          }
+        ]
+      },
+      {
+        "id": "databricksOAuthM2M",
+        "label": "Databricks OAuth machine-to-machine",
+        "kind": "oauth2",
+        "secretPurposes": [
           "token"
         ],
-        "fields": []
+        "fields": [
+          {
+            "id": "authMech",
+            "label": "AuthMech",
+            "type": "number",
+            "option": "AuthMech",
+            "default": 11,
+            "required": true
+          },
+          {
+            "id": "authFlow",
+            "label": "Auth flow",
+            "type": "number",
+            "option": "Auth_Flow",
+            "default": 1,
+            "required": true
+          },
+          {
+            "id": "oauth2ClientId",
+            "label": "OAuth client ID",
+            "type": "string",
+            "option": "OAuth2ClientId",
+            "required": true
+          },
+          {
+            "id": "oauth2Secret",
+            "label": "OAuth secret",
+            "type": "secret",
+            "secretPurpose": "token",
+            "option": "OAuth2Secret",
+            "required": true
+          },
+          {
+            "id": "azureTenantId",
+            "label": "Azure tenant ID",
+            "type": "string",
+            "option": "AzureTenantId"
+          }
+        ]
+      },
+      {
+        "id": "databricksAzureManagedIdentity",
+        "label": "Databricks Azure managed identity",
+        "kind": "managedIdentity",
+        "secretPurposes": [],
+        "fields": [
+          {
+            "id": "authMech",
+            "label": "AuthMech",
+            "type": "number",
+            "option": "AuthMech",
+            "default": 11,
+            "required": true
+          },
+          {
+            "id": "authFlow",
+            "label": "Auth flow",
+            "type": "number",
+            "option": "Auth_Flow",
+            "default": 3,
+            "required": true
+          },
+          {
+            "id": "azureWorkspaceResourceId",
+            "label": "Azure workspace resource ID",
+            "type": "string",
+            "option": "Azure_workspace_resource_id",
+            "required": true
+          },
+          {
+            "id": "oauth2ClientId",
+            "label": "Managed identity client ID",
+            "type": "string",
+            "option": "OAuth2ClientId"
+          }
+        ]
       },
       {
         "id": "customDriverOptions",

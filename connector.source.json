@@ -44,22 +44,37 @@
           "default": 443
         },
         {
-          "id": "database",
-          "label": "Database",
+          "id": "httpPath",
+          "label": "HTTP path",
           "type": "string",
-          "profileField": "database"
+          "option": "httpPath",
+          "required": true
+        },
+        {
+          "id": "database",
+          "label": "Schema",
+          "type": "string",
+          "profileField": "database",
+          "option": "ConnSchema",
+          "default": "default"
+        },
+        {
+          "id": "catalog",
+          "label": "Catalog",
+          "type": "string",
+          "option": "ConnCatalog",
+          "default": "SPARK"
         }
       ]
     },
     "authMethods": [
       "none",
       "connectionString",
-      "personalAccessToken",
-      "oauth2",
-      "azureAd",
-      "servicePrincipal",
-      "managedIdentity",
-      "browserSso",
+      "databricksPersonalAccessToken",
+      "databricksOAuthToken",
+      "databricksOAuthU2M",
+      "databricksOAuthM2M",
+      "databricksAzureManagedIdentity",
       "customDriverOptions"
     ],
     "tls": "required",
