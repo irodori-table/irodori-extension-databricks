@@ -2,7 +2,7 @@
 name = "irodori-extension-databricks"
 version = "0.1.2"
 edition = "2021"
-license = "MIT OR 0BSD"
+license = "0BSD"
 description = "Native Irodori Table connector extension for Databricks."
 repository = "https://github.com/hjosugi/irodori-extension-databricks"
 readme = "README.md"
