@@ -3,7 +3,7 @@
   "manifestVersion": 1,
   "id": "irodori.databricks",
   "name": "Databricks Connector",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "irodori",
   "description": "Databricks Connector contributes the Databricks database connector through the native connector ABI.",
   "license": "MIT OR 0BSD",
