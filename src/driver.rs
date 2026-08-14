@@ -95,7 +95,9 @@ pub fn call_json(request: IrodoriConnectorBuffer) -> IrodoriConnectorBuffer {
 
 fn connect(request: &Value) -> IrodoriConnectorBuffer {
     let connection_id = abi::connection_id(Some(request));
-    let config = match DatabricksConfig::from_request(request) {
+    let config = match runtime()
+        .and_then(|runtime| runtime.block_on(DatabricksConfig::from_request(request)))
+    {
         Ok(config) => config,
         Err(err) => return abi::error("connector.invalidRequest", err),
     };
@@ -220,8 +222,51 @@ fn connection(connection_id: &str) -> Result<DatabricksConnection, IrodoriConnec
     })
 }
 
+/// Exchange a service principal's credentials for a workspace token.
+///
+/// Databricks' machine-to-machine OAuth: a client-credentials grant against the
+/// workspace's own OIDC endpoint. `all-apis` is the scope the SQL warehouse
+/// endpoints sit behind.
+async fn fetch_oauth_m2m_token(
+    client: &Client,
+    base_url: &str,
+    client_id: &str,
+    client_secret: &str,
+) -> Result<String, String> {
+    let url = format!("{}/oidc/v1/token", base_url.trim_end_matches('/'));
+    let response = client
+        .post(url)
+        .basic_auth(client_id, Some(client_secret))
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .body("grant_type=client_credentials&scope=all-apis")
+        .send()
+        .await
+        .map_err(|err| format!("Databricks OAuth token request failed: {err}"))?;
+    let status = response.status();
+    let text = response
+        .text()
+        .await
+        .map_err(|err| format!("Databricks OAuth response read failed: {err}"))?;
+    if !status.is_success() {
+        // The body can echo the client id; report the status only.
+        return Err(format!(
+            "Databricks returned HTTP {status} for the OAuth token request. Check the \
+             service principal's client id and secret, and that it has access to this workspace."
+        ));
+    }
+    serde_json::from_str::<Value>(&text)
+        .ok()
+        .and_then(|value| {
+            value
+                .get("access_token")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .ok_or_else(|| "Databricks OAuth response contained no access_token.".to_string())
+}
+
 impl DatabricksConfig {
-    fn from_request(request: &Value) -> Result<Self, String> {
+    async fn from_request(request: &Value) -> Result<Self, String> {
         let connection_string = option_string(request, &["connectionString", "url", "dsn"]);
         let jdbc_params = connection_string
             .as_deref()
@@ -244,12 +289,47 @@ impl DatabricksConfig {
             "Databricks connect requires warehouseId or an httpPath containing /warehouses/<id>."
                 .to_string()
         })?;
-        let token = option_string(
+        let supplied = option_string(
             request,
             &["token", "accessToken", "bearerToken", "pat", "password"],
         )
-        .or_else(|| jdbc_param(&jdbc_params, &["PWD", "password", "Token", "token"]))
-        .ok_or_else(|| "Databricks connect requires a bearer token.".to_string())?;
+        .or_else(|| jdbc_param(&jdbc_params, &["PWD", "password", "Token", "token"]));
+        // A service principal's client id and secret are exchanged for a token
+        // here rather than by the user. This is Databricks' machine-to-machine
+        // OAuth: unlike a personal access token it belongs to no person, so it
+        // survives someone leaving, which is the reason to prefer it.
+        let token = match (
+            supplied,
+            option_string(
+                request,
+                &["clientId", "oauthClientId", "servicePrincipalId"],
+            ),
+            option_string(
+                request,
+                &[
+                    "clientSecret",
+                    "oauthClientSecret",
+                    "servicePrincipalSecret",
+                ],
+            ),
+        ) {
+            (Some(token), _, _) => token,
+            (None, Some(client_id), Some(client_secret)) => {
+                fetch_oauth_m2m_token(&Client::new(), &base_url, &client_id, &client_secret).await?
+            }
+            (None, Some(_), None) => {
+                return Err("Databricks OAuth needs clientSecret alongside clientId.".to_string())
+            }
+            (None, None, Some(_)) => {
+                return Err("Databricks OAuth needs clientId alongside clientSecret.".to_string())
+            }
+            (None, None, None) => {
+                return Err(
+                    "Databricks connect requires a token, or a clientId and clientSecret."
+                        .to_string(),
+                )
+            }
+        };
         let catalog = option_string(request, &["catalog"])
             .or_else(|| jdbc_param(&jdbc_params, &["ConnCatalog", "catalog"]));
         let schema = option_string(request, &["schema", "database", "db"])
@@ -688,7 +768,7 @@ mod tests {
         let request = json!({
             "url": "jdbc:databricks://dbc.example.cloud.databricks.com:443/default;httpPath=/sql/1.0/warehouses/abc123;PWD=secret",
         });
-        let config = DatabricksConfig::from_request(&request).unwrap();
+        let config = block_on_config(&request).unwrap();
         assert_eq!(config.base_url, "https://dbc.example.cloud.databricks.com");
         assert_eq!(config.warehouse_id, "abc123");
         assert_eq!(config.token, "secret");
@@ -700,5 +780,66 @@ mod tests {
             warehouse_id_from_http_path("/sql/1.0/warehouses/abc123"),
             Some("abc123".to_string())
         );
+    }
+
+    /// The config builder mints an OAuth token when asked, so it is async; these
+    /// tests only exercise paths that do not reach the network.
+    fn block_on_config(request: &Value) -> Result<DatabricksConfig, String> {
+        runtime()
+            .expect("runtime")
+            .block_on(DatabricksConfig::from_request(request))
+    }
+
+    #[test]
+    fn a_supplied_token_is_used_without_an_oauth_exchange() {
+        let config = block_on_config(&json!({
+            "profile": {
+                "host": "dbc.example.cloud.databricks.com",
+                "options": { "warehouseId": "abc123", "token": "dapi-token" }
+            }
+        }))
+        .expect("config");
+        assert_eq!(config.token, "dapi-token");
+    }
+
+    #[test]
+    fn half_an_oauth_credential_is_rejected_with_a_usable_message() {
+        // Falling through to "requires a token" would send the user looking for
+        // the wrong thing.
+        let only_id = block_on_config(&json!({
+            "profile": {
+                "host": "dbc.example.cloud.databricks.com",
+                "options": { "warehouseId": "abc123", "clientId": "sp-id" }
+            }
+        }))
+        .unwrap_err();
+        assert_eq!(
+            only_id,
+            "Databricks OAuth needs clientSecret alongside clientId."
+        );
+
+        let only_secret = block_on_config(&json!({
+            "profile": {
+                "host": "dbc.example.cloud.databricks.com",
+                "options": { "warehouseId": "abc123", "clientSecret": "sp-secret" }
+            }
+        }))
+        .unwrap_err();
+        assert_eq!(
+            only_secret,
+            "Databricks OAuth needs clientId alongside clientSecret."
+        );
+    }
+
+    #[test]
+    fn no_credential_at_all_names_both_options() {
+        let err = block_on_config(&json!({
+            "profile": {
+                "host": "dbc.example.cloud.databricks.com",
+                "options": { "warehouseId": "abc123" }
+            }
+        }))
+        .unwrap_err();
+        assert!(err.contains("clientId and clientSecret"), "{err}");
     }
 }
