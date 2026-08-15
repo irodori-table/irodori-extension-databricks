@@ -1,3 +1,4 @@
+use irodori_connector_abi::{collect_url_auth, option_string, push_sensitive};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
@@ -683,73 +684,6 @@ fn jdbc_param(params: &HashMap<String, String>, fields: &[&str]) -> Option<Strin
     fields
         .iter()
         .find_map(|field| params.get(&field.to_ascii_lowercase()).cloned())
-}
-
-fn request_containers(request: &Value) -> Vec<&Value> {
-    [
-        Some(request),
-        request.get("profile"),
-        request.get("options"),
-        request.get("auth"),
-        request.get("secrets"),
-        request
-            .get("profile")
-            .and_then(|profile| profile.get("options")),
-        request
-            .get("profile")
-            .and_then(|profile| profile.get("auth")),
-        request
-            .get("profile")
-            .and_then(|profile| profile.get("secrets")),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
-}
-
-fn option_string(request: &Value, fields: &[&str]) -> Option<String> {
-    request_containers(request)
-        .into_iter()
-        .find_map(|container| {
-            fields.iter().find_map(|field| {
-                container
-                    .get(*field)
-                    .map(|value| match value {
-                        Value::String(value) => value.clone(),
-                        Value::Number(value) => value.to_string(),
-                        Value::Bool(value) => value.to_string(),
-                        _ => String::new(),
-                    })
-                    .map(|value| value.trim().to_string())
-                    .filter(|value| !value.is_empty())
-            })
-        })
-}
-
-fn push_sensitive(values: &mut Vec<String>, value: Option<&str>) {
-    if let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) {
-        if !values.iter().any(|existing| existing == value) {
-            values.push(value.to_string());
-        }
-    }
-}
-
-fn collect_url_auth(url: &str, values: &mut Vec<String>) {
-    let Some(after_scheme) = url.split_once("://").map(|(_, rest)| rest) else {
-        return;
-    };
-    let Some(auth) = after_scheme
-        .split('/')
-        .next()
-        .and_then(|host| host.split('@').next())
-    else {
-        return;
-    };
-    if auth.contains(':') {
-        for part in auth.split(':') {
-            push_sensitive(values, Some(part));
-        }
-    }
 }
 
 fn collect_jdbc_secrets(input: &str, values: &mut Vec<String>) {
