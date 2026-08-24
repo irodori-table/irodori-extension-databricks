@@ -352,15 +352,11 @@ impl DatabricksConfig {
     }
 
     fn redact(&self, message: &str) -> String {
-        self.redaction_values.iter().fold(
-            message.replace(&self.base_url, "<databricks-url>"),
-            |message, secret| {
-                if secret.is_empty() {
-                    message
-                } else {
-                    message.replace(secret, "****")
-                }
-            },
+        abi::redact_endpoint(
+            message,
+            &self.base_url,
+            "<databricks-url>",
+            &self.redaction_values,
         )
     }
 }
